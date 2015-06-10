@@ -4,6 +4,7 @@
   angular.module('toastr')
     .constant('toastrConfig', {
       allowHtml: false,
+      autoDismiss: false,
       closeButton: false,
       closeHtml: '<button>&times;</button>',
       containerId: 'toast-container',
@@ -20,8 +21,15 @@
       onHidden: null,
       onShown: null,
       positionClass: 'toast-top-right',
+      preventDuplicates: false,
+      preventOpenDuplicates: false,
+      progressBar: false,
       tapToDismiss: true,
       target: 'body',
+      templates: {
+        toast: 'directives/toast/toast.html',
+        progressbar: 'directives/progressbar/progressbar.html'
+      },
       timeOut: 5000,
       titleClass: 'toast-title',
       toastClass: 'toast'

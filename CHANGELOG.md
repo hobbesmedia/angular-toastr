@@ -1,5 +1,50 @@
 # Changelog
 
+## Version 1.4.1
+
+- Fix a typo on the toastr.less file that prevented some automated tools to work.
+- Add the license to bower.json.
+
+## Version 1.4.0
+
+- With `preventOpenDuplicates` you can prevent duplicates of opened toasts.
+- Webpack / Browserify support.
+- Now the bower package won't try to fetch the latest angular version.
+
+## Version 1.3.1
+
+- Add compatibility with `Angular 1.4.x`.
+
+## Version 1.3.0
+
+- An `autoDismiss` option to be used with `maxOpened` to dismiss the oldest toast.
+- Every toast has now an `isOpened` property to see whether they are opened or not.
+
+## Version 1.2.1
+
+- Remove a nasty console.log from the progress bar (yikes!).
+
+## Version 1.2.0
+
+- Support for a progress bar.
+- A config option to change the path of the templates.
+ 
+**BREAKING CHANGE:**
+
+If you were using a custom template using the default path, it changed from:
+
+`templates/toastr/toastr.html`
+
+to
+
+`directives/toast/toast.html`
+
+## Version 1.1.0
+
+- Now you can prevent the last toast from being duplicated setting `preventDuplicates` to true.
+- Fix toasts options not working if the title parameter is set to null.
+- Prevent toasts to override global options.
+
 ## Version 1.0.2
 
 - Fixed an issue where it wouldn't work anymore without `ngAnimate`.

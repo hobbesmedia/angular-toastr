@@ -7,7 +7,13 @@
   toastr.$inject = ['$animate', '$injector', '$document', '$rootScope', '$sce', 'toastrConfig', '$q'];
 
   function toastr($animate, $injector, $document, $rootScope, $sce, toastrConfig, $q) {
-    var container, index = 0, toasts = [];
+    var container;
+    var index = 0;
+    var toasts = [];
+
+    var previousToastMessage = '';
+    var openToasts = {};
+
     var containerDefer = $q.defer();
 
     var toast = {
@@ -57,12 +63,14 @@
 
       if (toast && ! toast.deleting) { // Avoid clicking when fading out
         toast.deleting = true;
+        toast.isOpened = false;
         $animate.leave(toast.el).then(function() {
           if (toast.scope.options.onHidden) {
             toast.scope.options.onHidden(wasClicked);
           }
           toast.scope.$destroy();
           var index = toasts.indexOf(toast);
+          delete openToasts[toast.scope.message];
           toasts.splice(index, 1);
           var maxOpened = toastrConfig.maxOpened;
           if (maxOpened && toasts.length >= maxOpened) {
@@ -92,7 +100,7 @@
     /* Internal functions */
     function _buildNotification(type, message, title, optionsOverride)
     {
-      if (typeof title === 'object') {
+      if (angular.isObject(title)) {
         optionsOverride = title;
         title = null;
       }
@@ -133,9 +141,18 @@
     function _notify(map) {
       var options = _getOptions();
 
+      if (shouldExit()) { return; }
+
       var newToast = createToast();
 
       toasts.push(newToast);
+
+      if (options.autoDismiss && options.maxOpened > 0) {
+        var oldToasts = toasts.slice(0, (toasts.length - options.maxOpened));
+        for (var i = 0, len = oldToasts.length; i < len; i++) {
+          remove(oldToasts[i].toastId);
+        }
+      }
 
       if (maxOpenedNotReached()) {
         newToast.open.resolve();
@@ -143,12 +160,14 @@
 
       newToast.open.promise.then(function() {
         _createOrGetContainer(options).then(function() {
+          newToast.isOpened = true;
           if (options.newestOnTop) {
             $animate.enter(newToast.el, container).then(function() {
               newToast.scope.init();
             });
           } else {
-            $animate.enter(newToast.el, container, container[0].lastChild).then(function() {
+            var sibling = container[0].lastChild ? angular.element(container[0].lastChild) : null;
+            $animate.enter(newToast.el, container, sibling).then(function() {
               newToast.scope.init();
             });
           }
@@ -175,6 +194,7 @@
           messageClass: options.messageClass,
           onHidden: options.onHidden,
           onShown: options.onShown,
+          progressBar: options.progressBar,
           tapToDismiss: options.tapToDismiss,
           timeOut: options.timeOut,
           titleClass: options.titleClass,
@@ -189,12 +209,13 @@
       function createToast() {
         var newToast = {
           toastId: index++,
+          isOpened: false,
           scope: $rootScope.$new(),
           open: $q.defer()
         };
         newToast.iconClass = map.iconClass;
         if (map.optionsOverride) {
-          options = angular.extend(options, map.optionsOverride);
+          options = angular.extend(options, cleanOptionsOverride(map.optionsOverride));
           newToast.iconClass = map.optionsOverride.iconClass || newToast.iconClass;
         }
 
@@ -203,6 +224,16 @@
         newToast.el = createToastEl(newToast.scope);
 
         return newToast;
+
+        function cleanOptionsOverride(options) {
+          var badOptions = ['containerId', 'iconClasses', 'maxOpened', 'newestOnTop',
+                            'positionClass', 'preventDuplicates', 'preventOpenDuplicates', 'templates'];
+          for (var i = 0, l = badOptions.length; i < l; i++) {
+            delete options[badOptions[i]];
+          }
+
+          return options;
+        }
       }
 
       function createToastEl(scope) {
@@ -213,6 +244,20 @@
 
       function maxOpenedNotReached() {
         return options.maxOpened && toasts.length <= options.maxOpened || !options.maxOpened;
+      }
+
+      function shouldExit() {
+        var isDuplicateOfLast = options.preventDuplicates && map.message === previousToastMessage;
+        var isDuplicateOpen = options.preventOpenDuplicates && openToasts[map.message];
+
+        if (isDuplicateOfLast || isDuplicateOpen) {
+          return true;
+        }
+
+        previousToastMessage = map.message;
+        openToasts[map.message] = true;
+
+        return false;
       }
     }
   }
